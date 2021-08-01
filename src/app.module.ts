@@ -5,9 +5,9 @@ import { AppService } from './app.service';
 import { PostsModule } from './posts/posts.module';
 import { DatabaseModule } from './database/database.module';
 import { UsersModule } from './users/users.module';
-import { AuthenticationService } from './authentication/authentication.service';
 import { AuthenticationModule } from './authentication/authentication.module';
 import * as Joi from '@hapi/joi';
+import { CategoriesModule } from './categories/categories.module';
 @Module({
   imports: [
     PostsModule,
@@ -19,13 +19,16 @@ import * as Joi from '@hapi/joi';
         DATABASE_PASSWORD: Joi.string().required(),
         DATABASE_DB: Joi.string().required(),
         PORT: Joi.number(),
+        JWT_SECRET: Joi.string().required(),
+        JWT_EXPIRATION_TIME: Joi.string().required(),
       }),
     }),
     DatabaseModule,
     UsersModule,
     AuthenticationModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
-  providers: [AppService, AuthenticationService],
+  providers: [AppService],
 })
 export class AppModule {}

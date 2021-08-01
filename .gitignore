@@ -3,6 +3,7 @@
 /node_modules
 pgdata
 doc-project.txt
+.env
 # Logs
 logs
 *.log
