@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -11,7 +12,7 @@ import JwtAuthenticationGuard from '../authentication/guard/jwt-authentication.g
 import RequestWithUser from '../authentication/interface/requestWithUser.interface';
 import FindOneParams from '../utils/findOneParams';
 import CreatePostDto from './dto/createPost.dto';
-import { PostsService } from './posts.service';
+import { PostsService } from './service/posts.service';
 
 @Controller('posts')
 export class PostsController {
@@ -26,5 +27,13 @@ export class PostsController {
   @UseGuards(JwtAuthenticationGuard)
   async createPost(@Body() post: CreatePostDto, @Req() req: RequestWithUser) {
     return this.postsService.createPost(post, req.user);
+  }
+
+  @Get()
+  async getPosts(@Query('search') search: string) {
+    if (search) {
+      return this.postsService.searchElasticForPosts(search);
+    }
+    return this.postsService.getAllPosts();
   }
 }

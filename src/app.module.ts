@@ -9,6 +9,7 @@ import { AuthenticationModule } from './authentication/authentication.module';
 import * as Joi from '@hapi/joi';
 import { CategoriesModule } from './categories/categories.module';
 import { MiniofileModule } from './miniofile/miniofile.module';
+import { SearchModule } from './search/search.module';
 @Module({
   imports: [
     PostsModule,
@@ -28,6 +29,9 @@ import { MiniofileModule } from './miniofile/miniofile.module';
         MINIO_ACCESS_KEY: Joi.string().required(),
         MINIO_SECRET_KEY: Joi.string().required(),
         useSSL: false,
+        ELASTICSEARCH_NODE: Joi.string(),
+        ELASTICSEARCH_USERNAME: Joi.string(),
+        ELASTICSEARCH_PASSWORD: Joi.string(),
       }),
     }),
     DatabaseModule,
@@ -35,6 +39,7 @@ import { MiniofileModule } from './miniofile/miniofile.module';
     AuthenticationModule,
     CategoriesModule,
     MiniofileModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],
