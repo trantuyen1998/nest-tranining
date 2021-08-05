@@ -1,5 +1,7 @@
+import { BufferedFile } from '../miniofile/minioFile.interface';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { MiniofileService } from 'src/miniofile/miniofile.service';
 import { Repository } from 'typeorm';
 import CreateUserDto from './dto/createUser.dto';
 import User from './entity/users.entity';
@@ -9,6 +11,7 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    private readonly minioFileService: MiniofileService,
   ) {}
 
   async getByEmail(email: string) {
@@ -28,7 +31,9 @@ export class UsersService {
   }
 
   async getById(id: number) {
-    const user = await this.usersRepository.findOne({ id });
+    const user = await this.usersRepository.findOne(id, {
+      relations: ['avatar'],
+    });
     if (user) {
       return user;
     }
@@ -36,5 +41,34 @@ export class UsersService {
       'User with this id does not exist',
       HttpStatus.NOT_FOUND,
     );
+  }
+
+  async addAvatar(userId: number, imageBuffer: BufferedFile) {
+    const user = await this.getById(userId);
+    if (user.avatar) {
+      await this.usersRepository.update(userId, {
+        ...user,
+        avatar: null,
+      });
+      await this.minioFileService.deleteFile(user.avatar.id);
+    }
+    const avatar = await this.minioFileService.uploadFile(imageBuffer);
+    await this.usersRepository.update(userId, {
+      ...user,
+      avatar,
+    });
+    return avatar;
+  }
+
+  async deleteAvatar(userId: number) {
+    const user = await this.getById(userId);
+    const fileId = user.avatar?.id;
+    if (fileId) {
+      await this.usersRepository.update(userId, {
+        ...user,
+        avatar: null,
+      });
+      await this.minioFileService.deleteFile(fileId);
+    }
   }
 }

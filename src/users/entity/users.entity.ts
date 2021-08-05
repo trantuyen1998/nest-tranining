@@ -9,6 +9,7 @@ import {
 import { Exclude } from 'class-transformer';
 import Address from './address.entity';
 import Post from '../../posts/post.entity';
+import MinioFile from '../../miniofile/minioFile.entity';
 
 @Entity()
 class User {
@@ -37,6 +38,14 @@ class User {
 
   @OneToMany(() => Post, (post: Post) => post.author)
   public posts: Post[];
+
+  @JoinColumn()
+  @OneToOne(() => MinioFile, {
+    eager: true,
+    nullable: true,
+    cascade: true,
+  })
+  public avatar?: MinioFile;
 }
 
 export default User;

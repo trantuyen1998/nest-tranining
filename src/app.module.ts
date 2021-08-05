@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module';
 import { AuthenticationModule } from './authentication/authentication.module';
 import * as Joi from '@hapi/joi';
 import { CategoriesModule } from './categories/categories.module';
+import { MiniofileModule } from './miniofile/miniofile.module';
 @Module({
   imports: [
     PostsModule,
@@ -21,12 +22,19 @@ import { CategoriesModule } from './categories/categories.module';
         PORT: Joi.number(),
         JWT_SECRET: Joi.string().required(),
         JWT_EXPIRATION_TIME: Joi.string().required(),
+        MINIO_HOST: Joi.string().required(),
+        MINIO_PORT: Joi.number().required(),
+        MINIO_BUCKET: Joi.string().required(),
+        MINIO_ACCESS_KEY: Joi.string().required(),
+        MINIO_SECRET_KEY: Joi.string().required(),
+        useSSL: false,
       }),
     }),
     DatabaseModule,
     UsersModule,
     AuthenticationModule,
     CategoriesModule,
+    MiniofileModule,
   ],
   controllers: [AppController],
   providers: [AppService],

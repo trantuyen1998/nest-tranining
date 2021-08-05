@@ -1,4 +1,4 @@
-version: '3'
+version: '3.7'
 
 services:
   db:
@@ -12,6 +12,22 @@ services:
       POSTGRES_DB: ${DATABASE_DB}
     volumes:
       - ./pgdata:/var/lib/postgresql/data
+        # minio server service
+  minio-server:
+    container_name: minio
+    image: minio/minio:RELEASE.2021-04-06T23-11-00Z.hotfix.de8d75b78
 
+    restart: always
+    volumes:
+      - ./minio-data:/data
+    ports:
+      - '9008:9000'
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+    command: server /minio-data/data
+    depends_on:
+      - db
 volumes:
-  pgdata:
+  db-volumes:
+  minio-volumes:
