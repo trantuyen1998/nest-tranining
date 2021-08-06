@@ -5,6 +5,7 @@ import { MiniofileService } from 'src/miniofile/miniofile.service';
 import { Repository } from 'typeorm';
 import CreateUserDto from './dto/createUser.dto';
 import User from './entity/users.entity';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -70,5 +71,37 @@ export class UsersService {
       });
       await this.minioFileService.deleteFile(fileId);
     }
+  }
+
+  async setCurrentRefreshToken(refreshToken: string, userId: number) {
+    /**
+     * Hash refresh token before save to database
+     */
+    const currentHashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+    await this.usersRepository.update(userId, {
+      currentHashedRefreshToken,
+    });
+  }
+
+  /**
+   * Check token matching with token in database
+   */
+
+  async getUserIfRefreshTokenMatches(refreshToken: string, userId: number) {
+    const user = await this.getById(userId);
+
+    const isRefreshTokenMatching = await bcrypt.compare(
+      refreshToken,
+      user.currentHashedRefreshToken,
+    );
+
+    if (isRefreshTokenMatching) {
+      return user;
+    }
+  }
+  async removeRefreshToken(userId: number) {
+    return this.usersRepository.update(userId, {
+      currentHashedRefreshToken: null,
+    });
   }
 }

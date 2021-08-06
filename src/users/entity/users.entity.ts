@@ -46,6 +46,12 @@ class User {
     cascade: true,
   })
   public avatar?: MinioFile;
+
+  @Column({
+    nullable: true,
+  })
+  @Exclude()
+  public currentHashedRefreshToken?: string;
 }
 
 export default User;
