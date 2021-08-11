@@ -10,6 +10,7 @@ import * as Joi from '@hapi/joi';
 import { CategoriesModule } from './categories/categories.module';
 import { MiniofileModule } from './miniofile/miniofile.module';
 import { SearchModule } from './search/search.module';
+import { CommentModule } from './comment/comment.module';
 @Module({
   imports: [
     PostsModule,
@@ -42,6 +43,7 @@ import { SearchModule } from './search/search.module';
     CategoriesModule,
     MiniofileModule,
     SearchModule,
+    CommentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

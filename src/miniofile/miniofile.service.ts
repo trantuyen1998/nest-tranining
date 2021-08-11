@@ -2,7 +2,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MinioService } from 'nestjs-minio-client';
-import { Repository } from 'typeorm';
+import { QueryRunner, Repository } from 'typeorm';
 import { v4 as uuid } from 'uuid';
 import MinioFile from './minioFile.entity';
 import { BufferedFile } from './minioFile.interface';
@@ -153,5 +153,24 @@ export class MiniofileService {
       },
     );
     await this.minioFileRepository.delete(fileId);
+  }
+
+  public async deleteFileWithQueryRunner(
+    fileId: number,
+    queryRunner: QueryRunner,
+  ) {
+    const file = await queryRunner.manager.findOne(MinioFile, { id: fileId });
+    const fileUrl = file.url;
+    const fileName = fileUrl.substring(fileUrl.lastIndexOf('/') + 1);
+    await this.minio.client.removeObject(
+      this.bucketName,
+      fileName,
+      function (err: any) {
+        if (err) {
+          console.log('err remove', err);
+        }
+      },
+    );
+    await queryRunner.manager.delete(MinioFile, fileId);
   }
 }

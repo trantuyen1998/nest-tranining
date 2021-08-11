@@ -1,8 +1,13 @@
 import { BufferedFile } from '../miniofile/minioFile.interface';
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MiniofileService } from 'src/miniofile/miniofile.service';
-import { Repository } from 'typeorm';
+import { Connection, Repository } from 'typeorm';
 import CreateUserDto from './dto/createUser.dto';
 import User from './entity/users.entity';
 import * as bcrypt from 'bcrypt';
@@ -13,6 +18,7 @@ export class UsersService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private readonly minioFileService: MiniofileService,
+    private connection: Connection,
   ) {}
 
   async getByEmail(email: string) {
@@ -61,15 +67,37 @@ export class UsersService {
     return avatar;
   }
 
+  /**
+   *
+   * @param userId
+   * Apply transaction when remove avatar
+   */
+
   async deleteAvatar(userId: number) {
+    const queryRunner = this.connection.createQueryRunner();
     const user = await this.getById(userId);
     const fileId = user.avatar?.id;
     if (fileId) {
-      await this.usersRepository.update(userId, {
-        ...user,
-        avatar: null,
-      });
-      await this.minioFileService.deleteFile(fileId);
+      // Use connection from connection pool
+      await queryRunner.connect();
+      // Create transaction
+      await queryRunner.startTransaction();
+      try {
+        await queryRunner.manager.update(User, userId, {
+          ...user,
+          avatar: null,
+        });
+        await this.minioFileService.deleteFileWithQueryRunner(
+          fileId,
+          queryRunner,
+        );
+        await queryRunner.commitTransaction();
+      } catch (e) {
+        await queryRunner.rollbackTransaction();
+        throw new InternalServerErrorException();
+      } finally {
+        await queryRunner.release();
+      }
     }
   }
 

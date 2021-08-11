@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import User from 'src/users/entity/users.entity';
-import { In, Repository } from 'typeorm';
+import { FindManyOptions, In, MoreThan, Repository } from 'typeorm';
 import CreatePostDto from '../dto/createPost.dto';
 import UpdatePostDto from '../dto/updatePost.dto';
 import PostNotFoundException from '../exception/postNotFound.exception';
@@ -16,8 +16,26 @@ export class PostsService {
     private postsSearchElasticService: PostSearchElasticService,
   ) {}
 
-  async getAllPosts() {
-    return await this.postsRepository.find({ relations: ['author'] });
+  async getAllPosts(offset?: number, limit?: number, startId?: number) {
+    const where: FindManyOptions<Post>['where'] = {};
+    let separateCount = 0;
+    if (startId) {
+      where.id = MoreThan(startId);
+      separateCount = await this.postsRepository.count();
+    }
+    const [items, count] = await this.postsRepository.findAndCount({
+      where,
+      relations: ['author'],
+      order: {
+        id: 'ASC',
+      },
+      skip: offset,
+      take: limit,
+    });
+    return {
+      items,
+      count: startId ? separateCount : count,
+    };
   }
 
   async getPostById(id: number) {
@@ -35,22 +53,43 @@ export class PostsService {
       ...post,
       author: user,
     });
-    await this.postsRepository.save(newPost);
-    await this.postsSearchElasticService.indexPost(newPost);
-    return newPost;
+    try {
+      await this.postsRepository.save(newPost);
+      await this.postsSearchElasticService.indexPost(newPost);
+      return newPost;
+    } catch (error) {
+      console.log('error when add post', error);
+    }
   }
 
-  async searchElasticForPosts(text: string) {
-    const result = await this.postsSearchElasticService.searchPost(text);
-    const ids = result.map((result) => result.id);
+  async searchElasticForPosts(
+    text: string,
+    offset?: number,
+    limit?: number,
+    startId?: number,
+  ) {
+    const { results, count } = await this.postsSearchElasticService.searchPost(
+      text,
+      offset,
+      limit,
+      startId,
+    );
+    const ids = results.map((result) => result.id);
     if (!ids.length) {
-      return [];
+      return {
+        items: [],
+        count,
+      };
     }
-    return this.postsRepository.find({
+    const items = await this.postsRepository.find({
       where: {
         id: In(ids),
       },
     });
+    return {
+      items,
+      count,
+    };
   }
 
   async deletePost(id: number) {
@@ -71,5 +110,12 @@ export class PostsService {
       return postUpdate;
     }
     throw new PostNotFoundException(id);
+  }
+
+  async getPostsWithParagraph(paragraph: string) {
+    return this.postsRepository.query(
+      'SELECT * from post WHERE $1 = ANY(paragraphs)',
+      [paragraph],
+    );
   }
 }

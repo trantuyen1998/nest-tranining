@@ -1,9 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { ElasticsearchService } from '@nestjs/elasticsearch';
+import {
+  PostSearchBody,
+  PostSearchResult,
+  PostCountResult,
+} from '../interface/postSearchBody.interface';
 import Post from '../post.entity';
 @Injectable()
 export default class PostSearchElasticService {
-  index = 'post';
+  index = 'posts';
   constructor(private readonly elasticSearchService: ElasticsearchService) {}
 
   async indexPost(post: Post) {
@@ -18,23 +23,55 @@ export default class PostSearchElasticService {
     });
   }
 
-  async searchPost(text: string) {
+  /**
+   *
+   * @param text
+   * @param offset
+   * @param limit
+   * @returns
+   * Elasticsearch return List post with pagination
+   */
+  async searchPost(text: string, offset?: number, limit?: number, startId = 0) {
+    let separateCount = 0;
+    if (startId) {
+      separateCount = await this.count(text, ['title', 'paragraphs']);
+    }
     const { body } = await this.elasticSearchService.search<PostSearchResult>({
       index: this.index,
+      from: offset,
+      size: limit,
       body: {
         query: {
-          /**
-           * Search more condition
-           */
-          multi_match: {
-            query: text,
-            fields: ['title', 'paragraphs'],
+          bool: {
+            should: {
+              multi_match: {
+                query: text,
+                fields: ['title', 'paragraphs'],
+              },
+            },
+            filter: {
+              range: {
+                id: {
+                  gt: startId,
+                },
+              },
+            },
+          },
+        },
+        sort: {
+          id: {
+            order: 'asc',
           },
         },
       },
     });
+    const count = body.hits.total.valueOf;
     const hits = body.hits.hits;
-    return hits.map((item) => item._source);
+    const results = hits.map((item) => item._source);
+    return {
+      results,
+      count: startId ? separateCount : count,
+    };
   }
 
   async removePost(postId: number) {
@@ -75,5 +112,27 @@ export default class PostSearchElasticService {
         },
       },
     });
+  }
+
+  /**
+   *
+   * @param query
+   * @param fields
+   * @returns
+   * Count for keyset pagination
+   */
+  async count(query: string, fields: string[]) {
+    const { body } = await this.elasticSearchService.count<PostCountResult>({
+      index: this.index,
+      body: {
+        query: {
+          multi_match: {
+            query,
+            fields,
+          },
+        },
+      },
+    });
+    return body.count;
   }
 }

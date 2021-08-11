@@ -1,5 +1,6 @@
 import {
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -13,7 +14,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import RequestWithUser from '../authentication/interface/requestWithUser.interface';
 import { BufferedFile } from '../miniofile/minioFile.interface';
 import { UsersService } from './users.service';
-import FindOneParams from 'src/utils/findOneParams';
+import FindOneParams from 'src/utils/type/findOneParams';
 
 @Controller('users')
 export class UsersController {
@@ -27,6 +28,12 @@ export class UsersController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     return this.usersService.addAvatar(request.user.id, file as BufferedFile);
+  }
+
+  @Delete('avatar')
+  @UseGuards(JwtAuthenticationGuard)
+  async deleteAvatar(@Req() request: RequestWithUser) {
+    return this.usersService.deleteAvatar(request.user.id);
   }
 
   @Get(':id')
