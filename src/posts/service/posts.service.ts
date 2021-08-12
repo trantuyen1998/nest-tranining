@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  CACHE_MANAGER,
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import User from 'src/users/entity/users.entity';
 import { FindManyOptions, In, MoreThan, Repository } from 'typeorm';
@@ -7,6 +13,8 @@ import UpdatePostDto from '../dto/updatePost.dto';
 import PostNotFoundException from '../exception/postNotFound.exception';
 import Post from '../post.entity';
 import PostSearchElasticService from './postSearchElastic.service';
+import { Cache } from 'cache-manager';
+import { GET_POSTS_CACHE_KEY } from '../constants/postsCacheKey.constant';
 
 @Injectable()
 export class PostsService {
@@ -14,6 +22,7 @@ export class PostsService {
     @InjectRepository(Post)
     private postsRepository: Repository<Post>,
     private postsSearchElasticService: PostSearchElasticService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async getAllPosts(offset?: number, limit?: number, startId?: number) {
@@ -56,6 +65,8 @@ export class PostsService {
     try {
       await this.postsRepository.save(newPost);
       await this.postsSearchElasticService.indexPost(newPost);
+      // clear cache when create
+      await this.clearCache();
       return newPost;
     } catch (error) {
       console.log('error when add post', error);
@@ -98,6 +109,7 @@ export class PostsService {
       throw new PostNotFoundException(id);
     }
     await this.postsSearchElasticService.removePost(id);
+    await this.clearCache();
   }
 
   async updatePost(id: number, post: UpdatePostDto) {
@@ -107,6 +119,7 @@ export class PostsService {
     });
     if (postUpdate) {
       await this.postsSearchElasticService.updatePost(postUpdate);
+      await this.clearCache();
       return postUpdate;
     }
     throw new PostNotFoundException(id);
@@ -117,5 +130,17 @@ export class PostsService {
       'SELECT * from post WHERE $1 = ANY(paragraphs)',
       [paragraph],
     );
+  }
+
+  /**
+   * Handle clear cache use when CRUD
+   */
+  async clearCache() {
+    const keys: string[] = await this.cacheManager.store.keys();
+    keys.forEach((key) => {
+      if (key.startsWith(GET_POSTS_CACHE_KEY)) {
+        this.cacheManager.del(key);
+      }
+    });
   }
 }

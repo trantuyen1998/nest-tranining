@@ -11,6 +11,8 @@ import { CategoriesModule } from './categories/categories.module';
 import { MiniofileModule } from './miniofile/miniofile.module';
 import { SearchModule } from './search/search.module';
 import { CommentModule } from './comment/comment.module';
+import { ProductModule } from './product/product.module';
+import { ProductCategoriesModule } from './product-categories/product-categories.module';
 @Module({
   imports: [
     PostsModule,
@@ -35,6 +37,8 @@ import { CommentModule } from './comment/comment.module';
         ELASTICSEARCH_NODE: Joi.string(),
         ELASTICSEARCH_USERNAME: Joi.string(),
         ELASTICSEARCH_PASSWORD: Joi.string(),
+        REDIS_HOST: Joi.string().required(),
+        REDIS_PORT: Joi.number().required(),
       }),
     }),
     DatabaseModule,
@@ -44,6 +48,8 @@ import { CommentModule } from './comment/comment.module';
     MiniofileModule,
     SearchModule,
     CommentModule,
+    ProductModule,
+    ProductCategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
