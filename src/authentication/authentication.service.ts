@@ -54,6 +54,21 @@ export class AuthenticationService {
       );
     }
   }
+
+  /**
+   *
+   * @param token
+   * @returns
+   * return user for socket io
+   */
+  public async getUserFromAuthenticationToken(token: string) {
+    const payload: TokenPayload = this.jwtService.verify(token, {
+      secret: this.configService.get('JWT_ACCESS_TOKEN_SECRET'),
+    });
+    if (payload.userId) {
+      return this.usersService.getById(payload.userId);
+    }
+  }
   private async verifyPassword(
     plainTextPassword: string,
     hashedPassword: string,

@@ -13,9 +13,14 @@ import { SearchModule } from './search/search.module';
 import { CommentModule } from './comment/comment.module';
 import { ProductModule } from './product/product.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
+import { EmailModule } from './email/email.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { EmailSchedulingModule } from './email-scheduling/email-scheduling.module';
+import { ChatModule } from './chat/chat.module';
 @Module({
   imports: [
     PostsModule,
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       validationSchema: Joi.object({
         DATABASE_HOST: Joi.string().required(),
@@ -39,6 +44,9 @@ import { ProductCategoriesModule } from './product-categories/product-categories
         ELASTICSEARCH_PASSWORD: Joi.string(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().required(),
+        EMAIL_SERVICE: Joi.string().required(),
+        EMAIL_USER: Joi.string().required(),
+        EMAIL_PASSWORD: Joi.string().required(),
       }),
     }),
     DatabaseModule,
@@ -50,6 +58,9 @@ import { ProductCategoriesModule } from './product-categories/product-categories
     CommentModule,
     ProductModule,
     ProductCategoriesModule,
+    EmailModule,
+    EmailSchedulingModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],
