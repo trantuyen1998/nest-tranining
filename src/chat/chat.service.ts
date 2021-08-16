@@ -10,7 +10,11 @@ import User from '../users/entity/users.entity';
 
 @Injectable()
 export class ChatService {
-  constructor(private readonly authenticationService: AuthenticationService) {}
+  constructor(
+    @InjectRepository(Message)
+    private readonly messagesRepository: Repository<Message>,
+    private readonly authenticationService: AuthenticationService,
+  ) {}
 
   async getUserFromSocket(socket: Socket) {
     const cookie = socket.handshake.headers.cookie;
@@ -25,17 +29,17 @@ export class ChatService {
     return user;
   }
 
-  // async saveMessage(content: string, author: User) {
-  //   const newMessage = await this.messagesRepository.create({
-  //     content,
-  //     author,
-  //   });
-  //   await this.messagesRepository.save(newMessage);
-  //   return newMessage;
-  // }
-
-  // async getAllMessages() {
-  //     relations: ['author'],
-  //   });
-  // }
+  async saveMessage(content: string, author: User) {
+    const newMessage = await this.messagesRepository.create({
+      content,
+      author,
+    });
+    await this.messagesRepository.save(newMessage);
+    return newMessage;
+  }
+  async getAllMessages() {
+    return this.messagesRepository.find({
+      relations: ['author'],
+    });
+  }
 }

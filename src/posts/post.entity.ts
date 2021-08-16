@@ -9,6 +9,7 @@ import {
   PrimaryGeneratedColumn,
   Index,
   OneToMany,
+  RelationId,
 } from 'typeorm';
 import Comment from '../comment/comment.entity';
 

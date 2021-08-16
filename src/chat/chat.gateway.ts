@@ -26,11 +26,21 @@ export class ChatGateway implements OnGatewayConnection {
     @ConnectedSocket() socket: Socket,
   ) {
     const author = await this.chatService.getUserFromSocket(socket);
+    const message = await this.chatService.saveMessage(content, author);
+
+    this.server.sockets.emit('receive_message', message);
 
     //authenticate when user send message
     this.server.sockets.emit('receive_message', {
       content,
       author,
     });
+  }
+  @SubscribeMessage('request_all_messages')
+  async requestAllMessages(@ConnectedSocket() socket: Socket) {
+    await this.chatService.getUserFromSocket(socket);
+    const messages = await this.chatService.getAllMessages();
+
+    socket.emit('send_all_messages', messages);
   }
 }

@@ -64,7 +64,7 @@ export class PostsService {
     });
     try {
       await this.postsRepository.save(newPost);
-      await this.postsSearchElasticService.indexPost(newPost);
+      // await this.postsSearchElasticService.indexPost(newPost);
       // clear cache when create
       await this.clearCache();
       return newPost;

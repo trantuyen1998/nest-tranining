@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PostsModule } from './posts/posts.module';
@@ -17,9 +17,19 @@ import { EmailModule } from './email/email.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EmailSchedulingModule } from './email-scheduling/email-scheduling.module';
 import { ChatModule } from './chat/chat.module';
+import { join } from 'path';
+import { GraphQLModule } from '@nestjs/graphql';
 @Module({
   imports: [
     PostsModule,
+    GraphQLModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        playground: Boolean(configService.get('GRAPHQL_PLAYGROUND')),
+        autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      }),
+    }),
     ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       validationSchema: Joi.object({
@@ -47,6 +57,7 @@ import { ChatModule } from './chat/chat.module';
         EMAIL_SERVICE: Joi.string().required(),
         EMAIL_USER: Joi.string().required(),
         EMAIL_PASSWORD: Joi.string().required(),
+        GRAPHQL_PLAYGROUND: Joi.number(),
       }),
     }),
     DatabaseModule,
