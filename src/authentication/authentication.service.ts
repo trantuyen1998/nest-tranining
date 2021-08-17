@@ -94,8 +94,11 @@ export class AuthenticationService {
    *
    */
 
-  public async getCookieWithJwtToken(userId: number) {
-    const payload: TokenPayload = { userId };
+  public async getCookieWithJwtToken(
+    userId: number,
+    isSecondFactorAuthenticated = false,
+  ) {
+    const payload: TokenPayload = { userId, isSecondFactorAuthenticated };
     const token = this.jwtService.sign(payload, {
       secret: this.configService.get('JWT_ACCESS_TOKEN_SECRET'),
       expiresIn: `${this.configService.get(

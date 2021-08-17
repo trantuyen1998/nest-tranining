@@ -35,7 +35,7 @@ export class AuthenticationController {
   @HttpCode(200)
   @UseGuards(LocalAuthenticationGuard)
   @Post('login')
-  async Login(@Req() request: RequestWithUser) {
+  async logIn(@Req() request: RequestWithUser) {
     const { user } = request;
     const accessTokenCookie =
       await this.authenticationService.getCookieWithJwtToken(user.id);
@@ -43,14 +43,21 @@ export class AuthenticationController {
       await this.authenticationService.getCookieWithJwtRefreshToken(user.id);
 
     await this.usersService.setCurrentRefreshToken(refreshToken, user.id);
+
     request.res.setHeader('Set-Cookie', [
       accessTokenCookie,
       refreshTokenCookie,
     ]);
+
+    console.log('aaa', user.isTwoFactorAuthenticationEnabled);
+
+    if (!user.isTwoFactorAuthenticationEnabled) {
+      return;
+    }
     user.password = undefined;
+
     return user;
   }
-
   @UseGuards(JwtRefreshGuard)
   @Get('refresh')
   async refresh(@Req() request: RequestWithUser) {
